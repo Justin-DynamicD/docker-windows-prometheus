@@ -1,0 +1,53 @@
+trigger:
+  - master
+
+schedules:
+  - cron: '0 20 * * *'
+    displayName: Daily Check
+    branches:
+      include:
+        - master
+    always: 'true'
+
+variables: 
+  majorMinorVersion: 1.0
+  semanticVersion: $[counter(variables['majorMinorVersion'], 0)]
+  versionNano: "1809"
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: Justin-DynamicD/azure_pipeline-templates
+      endpoint: GitHub
+
+jobs:
+  - job: getJenkinsVer
+    pool:
+      vmImage: 'windows-2019'
+    steps:
+      - task: PowerShell@2
+        name: checkJenkins
+        displayName: Check available Jenkins version
+        inputs:
+          filepath: pipeline\checkNewBuilds.ps1
+          arguments: -minorVer $(semanticVersion)
+
+      - task: PowerShell@2
+        name: generateBA
+        displayName: Generate Build_Arguments
+        inputs:
+          targetType: inline
+          script: |
+            $myargs = "--build-arg VERSIONNANO=$(versionNano) --build-arg VERSIONJENKINS=$(versionJenkins)"
+            write-output $myargs
+            write-output "##vso[task.setvariable variable=buildArguments;isOutput=true]$myargs"
+
+  - template: docker_container.yml@templates
+    parameters:
+      Container_Name: winjenkins
+      Container_Version: $[ dependencies.getJenkinsVer.outputs['checkJenkins.versionJenkins'] ]
+      Build_Arguments: $[ dependencies.getJenkinsVer.outputs['generateBA.buildArguments'] ]
+      dependsOn: getJenkinsVer
+      NewBuild: $[ dependencies.getJenkinsVer.outputs['checkJenkins.newBuild'] ]
+      Pool: 'windows-2019'
