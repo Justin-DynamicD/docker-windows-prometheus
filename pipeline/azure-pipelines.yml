@@ -60,5 +60,5 @@ jobs:
       Container_Version: $[ dependencies.getVersions.outputs['checkPrometheus.releaseLatest'] ]
       Build_Arguments: $[ dependencies.getVersions.outputs['generateBA.buildArguments'] ]
       dependsOn: getVersions
-      NewBuild: $[ dependencies.getJenkinsVer.outputs['checkPrometheus.newBuild'] ]
+      NewBuild: $[ dependencies.getVersions.outputs['checkPrometheus.newBuild'] ]
       Pool: 'windows-2019'
