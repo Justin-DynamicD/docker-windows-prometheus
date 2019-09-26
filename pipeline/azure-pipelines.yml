@@ -31,6 +31,7 @@ jobs:
           script: |
             write-output "cloning: $env:TEMPLATE_REPO_URL"
             git clone $env:TEMPLATE_REPO_URL
+            ls .\$($env:TEMPLATE_REPO_NAME)\
             cp .\$($env:TEMPLATE_REPO_NAME)\$($env:TEMPLATE_FILE) .\
             remove-item .\$env:TEMPLATE_REPO_NAME\ -Recurse -force -Confirm:$false
         env:
