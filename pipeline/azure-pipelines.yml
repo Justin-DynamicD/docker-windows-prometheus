@@ -30,12 +30,10 @@ jobs:
           targetType: inline
           script: |
             write-output "cloning: $env:TEMPLATE_REPO_URL"
-            git clone $env:TEMPLATE_REPO_URL
-            ls .\$($env:TEMPLATE_REPO_NAME)\
             cp .\$($env:TEMPLATE_REPO_NAME)\$($env:TEMPLATE_FILE) .\
             remove-item .\$env:TEMPLATE_REPO_NAME\ -Recurse -force -Confirm:$false
         env:
-          TEMPLATE_REPO_URL: https://github.com/Justin-DynamicD/docker-windows-prometheus
+          TEMPLATE_REPO_URL: https://github.com/Justin-DynamicD/azure_pipeline-templates
           TEMPLATE_REPO_NAME: azure_pipeline-templates
           TEMPLATE_FILE: scripts\compare-gitreleases.ps1
 
