@@ -29,7 +29,6 @@ jobs:
         inputs:
           targetType: inline
           script: |
-            write-output "cloning: $env:TEMPLATE_REPO_URL"
             git clone $env:TEMPLATE_REPO_URL
             cp .\$($env:TEMPLATE_REPO_NAME)\$($env:TEMPLATE_FILE) .\
             remove-item .\$env:TEMPLATE_REPO_NAME\ -Recurse -force -Confirm:$false
