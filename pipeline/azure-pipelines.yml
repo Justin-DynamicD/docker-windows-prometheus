@@ -10,8 +10,6 @@ schedules:
     always: 'true'
 
 variables: 
-  majorMinorVersion: 1.0
-  semanticVersion: $[counter(variables['majorMinorVersion'], 0)]
   versionNano: "1809"
 
 resources:
@@ -22,16 +20,29 @@ resources:
       endpoint: GitHub
 
 jobs:
-  - job: getJenkinsVer
+  - job: getVersions
     pool:
       vmImage: 'windows-2019'
     steps:
       - task: PowerShell@2
-        name: checkJenkins
-        displayName: Check available Jenkins version
+        displayName: Download Required Scripts
         inputs:
-          filepath: pipeline\checkNewBuilds.ps1
-          arguments: -minorVer $(semanticVersion)
+          targetType: inline
+          script: |
+            git clone $env:TEMPLATE_REPO_URL
+            cp .\$($env:TEMPLATE_REPO_NAME)\$($env:TEMPLATE_FILE) .\
+            remove-item .\$env:TEMPLATE_REPO_NAME\ -Recurse -force -Confirm:$false
+        env:
+          TEMPLATE_REPO_URL: git@github.com:Justin-DynamicD/azure_pipeline-templates.git
+          TEMPLATE_REPO_NAME: azure_pipeline-templates
+          TEMPLATE_FILE: scripts\compare-gitreleases.ps1
+
+      - task: PowerShell@2
+        name: checkPrometheus
+        displayName: Check available Prometheus version
+        inputs:
+          filepath: compare-gitreleases.ps1
+          arguments: -SourceGithubOwner prometheus -SourceGithubRepo prometheus -TargetGithubOwner Justin-DynamicD -TargetGithubRepo docker-windows-prometheus
 
       - task: PowerShell@2
         name: generateBA
@@ -39,15 +50,15 @@ jobs:
         inputs:
           targetType: inline
           script: |
-            $myargs = "--build-arg VERSIONNANO=$(versionNano) --build-arg VERSIONJENKINS=$(versionJenkins)"
+            $myargs = "--build-arg VERSIONNANO=$(versionNano) --build-arg VERSIONPROMETHEUS=$(releaseLatest)"
             write-output $myargs
             write-output "##vso[task.setvariable variable=buildArguments;isOutput=true]$myargs"
 
   - template: docker_container.yml@templates
     parameters:
-      Container_Name: winjenkins
-      Container_Version: $[ dependencies.getJenkinsVer.outputs['checkJenkins.versionJenkins'] ]
-      Build_Arguments: $[ dependencies.getJenkinsVer.outputs['generateBA.buildArguments'] ]
-      dependsOn: getJenkinsVer
-      NewBuild: $[ dependencies.getJenkinsVer.outputs['checkJenkins.newBuild'] ]
+      Container_Name: winprometheus
+      Container_Version: $[ dependencies.getVersions.outputs['checkPrometheus.releaseLatest'] ]
+      Build_Arguments: $[ dependencies.getVersions.outputs['generateBA.buildArguments'] ]
+      dependsOn: getVersions
+      NewBuild: $[ dependencies.getJenkinsVer.outputs['checkPrometheus.newBuild'] ]
       Pool: 'windows-2019'
